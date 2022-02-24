@@ -14,5 +14,8 @@ cd src
 make -j16
 ```
 
+### DPU code is in src/dpu_app
+### host code is mainly in src/ProcessReads.cpp
+
 
 
