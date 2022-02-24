@@ -1,5 +1,16 @@
 # RNA-Abundance-Quantification-on-UPMEM
-<<<<<<< HEAD
-=======
-Running state-of-the-art abundance quantification software "kallisto" on UPMEM DPU
->>>>>>> e10b4f8bab3a4c72a39060d2376dc87eb23483f0
+
+## build
+// build htslib first
+cd ext/htslib
+autoheader
+autoconf
+make -j16
+// build our main program
+cd ../..
+mkdir obj
+cd src 
+make -j16
+
+
+
