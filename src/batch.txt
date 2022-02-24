@@ -1,0 +1,11 @@
+#cell100M /home/upmem0024/yuntse/kallisto_dpu/data/SRR17804650.fastq.gz
+#
+#wrong
+#cell100K /home/upmem0024/yuntse/kallisto_dpu/data/SRR14568592.fastq.gz 
+#
+#cell10M /home/upmem0024/yuntse/kallisto_dpu/data/SRR3999876.fastq.gz 
+#
+#cell1M /home/upmem0024/yuntse/kallisto_dpu/data/SRR013550.fastq.gz 
+#
+test /home/upmem0024/yuntse/kallisto_dpu/test/reads_1.fastq.gz
+#test ../test/testread.fasta

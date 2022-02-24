@@ -1,0 +1,13 @@
+{
+	"n_targets": 6612,
+	"n_bootstraps": 0,
+	"n_processed": 0,
+	"n_pseudoaligned": 0,
+	"n_unique": 0,
+	"p_pseudoaligned": 0.0,
+	"p_unique": 0.0,
+	"kallisto_version": "0.48.0",
+	"index_version": 10,
+	"start_time": "Tue Feb 22 20:04:05 2022",
+	"call": "./kallisto pseudo -i /home/chi0828/rna_qutification/data/experiment/11-mer.idx --single -l 150 -s 30 -o out -t 8 /home/chi0828/rna_qutification/data/experiment/RNA-seq_read/1M.fastq"
+}
