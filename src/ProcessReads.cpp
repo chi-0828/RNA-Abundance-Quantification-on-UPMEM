@@ -1336,6 +1336,7 @@ void ReadProcessor::operator()() {
   dpu_args arg{index.k, 1};
   std::vector<dpu_args> args(1, arg);
   dpu_set.copy("arg", args);
+  
   // tarnsfer hash table
   std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
   std::vector<size_t> pop(1, index.kmap.pop);
