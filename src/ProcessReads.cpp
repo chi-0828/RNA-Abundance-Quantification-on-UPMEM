@@ -19,7 +19,7 @@ using namespace dpu;
 
 void ReadProcessor::CPU_intsersection(){
   //std::cerr << "start\n";
-  while(q.size() != 0 || break_loop != 1){
+  while((q.size() != 0) || break_loop != 1){
     q_lock.lock();
     //std::cerr << "in\n";
     if(q.size() != 0){
@@ -88,18 +88,18 @@ void ReadProcessor::process_result(int dpu_id, int n, std::vector<std::vector<st
   for(int read_id = 0; read_id < n; read_id++){
     //contig_ids.push_back(std::vector<std::pair<int, int>>());
     std::vector<std::pair<int, int>> tmp;
-    std::unordered_map<int, int> umap;
+    //std::unordered_map<int, int> umap;
     int end = matched_contig_len.at(dpu_id).at(read_id);
     //std::cerr << "read " << read_id << " start at " << start << " to " << start+end-1 << "\n ID: ";
     for(int matched_itr = 0; matched_itr < end; matched_itr++){
       int id = std::move(matched_id.at(dpu_id).at(start+matched_itr));
       assert(id != -1);
       int pos = std::move(matched_pos.at(dpu_id).at(start+matched_itr));
-      if(umap.find(id) == umap.end()){
+      /*if(umap.find(id) == umap.end()){
         umap.insert({id,0});
         tmp.push_back({std::move(id),std::move(pos)});
-      }
-      //tmp.push_back({std::move(id),std::move(pos)});
+      }*/
+      tmp.push_back({std::move(id),std::move(pos)});
       //std::cerr << id << " ";
     }
     //std::cerr << "\n";
@@ -1330,7 +1330,7 @@ void ReadProcessor::operator()() {
   //DpuSet dpu_set = DpuSet::allocate(3);
   DpuSet dpu_set = DpuSet::allocateRanks(2);
   dpu_set.load(DPU_BINARY);
-  std::cerr << "\n[DPU] For read mapping: allocated " << dpu_set.dpus().size() << " dpu(s) in " << dpu_set.ranks().size() << " rank(s)\n";
+  //std::cerr << "\n[DPU] For read mapping: allocated " << dpu_set.dpus().size() << " dpu(s) in " << dpu_set.ranks().size() << " rank(s)\n";
 
   // tarnsfer args
   dpu_args arg{index.k, 1};
@@ -1413,13 +1413,13 @@ void ReadProcessor::operator()() {
   std::chrono::steady_clock::time_point all_end = std::chrono::steady_clock::now();
   double total_time = std::chrono::duration_cast<std::chrono::nanoseconds> (all_end - all_begin).count()  * 1e-9;
   // write run time performance
-  std::cerr << "[DPU] transfer table time : " << transfer_table_time << "s\n";
+  /*std::cerr << "[DPU] transfer table time : " << transfer_table_time << "s\n";
   std::cerr << "[DPU] transfer read time : " << transfer_read_time<< "s\n";
   std::cerr << "[DPU] DPU run time : " << DPU_run_time << "s\n";
   std::cerr << "[DPU] transfer result time : " << transfer_result_time << "s\n";
   std::cerr << "[CPU] porcess result time : " << process_time -  intersection_time<< "s\n";
   std::cerr << "[CPU] intersction time : " << intersection_time << "s\n";
-  std::cerr << "[ALL] total time : " << total_time << "s\n";
+  std::cerr << "[ALL] total time : " << total_time << "s\n";*/
   
   //exit(1);
 }

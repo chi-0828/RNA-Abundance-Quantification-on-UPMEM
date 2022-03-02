@@ -5,7 +5,7 @@
 #define MAX_READ_N 20
 #define MAX_PACKET_SIZE (MAX_READ_LEN*MAX_READ_N)
 
-#define MAX_table_n 2097152
+#define MAX_table_n 419304
 
 typedef struct dpu_args {
     // k-mer size
