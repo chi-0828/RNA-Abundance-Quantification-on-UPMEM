@@ -1,0 +1,15 @@
+
+[quant] fragment length distribution is truncated gaussian with mean = 200, sd = 30
+[index] k-mer length: 13
+[index] number of targets: 6,612
+[index] number of k-mers: 6,383,616
+[index] number of equivalence classes: 1,124,801
+size of index.kmap.size_: 8388608
+size of index.kmap.size(): 6383616
+[quant] running in single-end mode
+[quant] will process file 1: /home/upmem0024/yuntse/data/experiment/RNA_read/100K.fastq
+[quant] finding pseudoalignments for the reads ...
+[DPU] For read mapping: allocated 64 dpu(s) in 1 rank(s)
+[DPU] transfer 55553 RNA reads(150bp)
+1 run
+2 run

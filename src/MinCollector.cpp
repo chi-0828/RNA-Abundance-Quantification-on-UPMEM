@@ -206,6 +206,7 @@ std::vector<int> MinCollector::DPU_intersectECs(std::vector<std::pair<int, int>>
        }); // sort by contig, and then first position
 
 
+
   assert(v[0].first != -1);
 
   int ec = index.dbGraph.ecs[v[0].first];

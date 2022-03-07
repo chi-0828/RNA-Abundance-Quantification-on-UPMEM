@@ -339,13 +339,20 @@ public:
   std::pair<int,int> read_count;
 
   // for concurrency
-  // 1 = break
   int break_loop;
   std::mutex Eclass_lock;
   std::mutex q_lock;
   // working queue
   using ids = std::vector<std::pair<int, int>>;
   std::queue<ids> q;
+
+  // for large-k
+  bool large_k;
+  int round;
+  int current_round;
+  std::vector<std::vector<size_t>> size_vec;
+  std::vector<std::vector<int64_t>> table_int_vec;
+  std::vector<std::vector<uint64_t>> table_kmer_vec;
 
   void operator()();
   #ifdef DPU_HEAD
@@ -354,9 +361,14 @@ public:
   void processBuffer(DpuSet &dpu_set);
   void clear();
   void transfer_read(std::vector<std::vector<std::pair<int, int>>> &contig_ids, DpuSet &dpu_set);
-  void process_result(int dpu_id, int n, std::vector<std::vector<std::pair<int, int>>> &contig_ids,
-                    std::vector<std::vector<int64_t>> &matched_id, std::vector<std::vector<int64_t>> &matched_pos, std::vector<std::vector<int>> &matched_contig_len);
+  void process_result(int dpu_id, int n, std::vector<std::vector<int64_t>> &result_2_read,
+                    std::vector<std::vector<int64_t>> &matched_id, std::vector<std::vector<int64_t>> &matched_pos, std::vector<std::vector<int>> &matched_size);
   void CPU_intsersection();
+  void next_round(){
+    current_round++;
+    if(current_round == round)
+      current_round = 0;
+  }
   #endif
 };
 
