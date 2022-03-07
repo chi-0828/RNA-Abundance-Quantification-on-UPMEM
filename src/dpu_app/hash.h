@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdint.h> 
 #include "dpu.h"
+#include "dpu_def.h"
 
 #undef get16bits
 #if (defined(__GNUC__) && defined(__i386__)) || defined(__WATCOMC__) \
@@ -27,7 +28,6 @@ typedef struct KmerHashTable {
     Kmer *table_kmer;
     Kmer empty;
     size_tt size_;
-    size_tt pop;
     __mram_ptr int64_t *table_int_ptr;
     __mram_ptr uint64_t *table_kmer_ptr;
 }KmerHashTable;
@@ -36,6 +36,6 @@ uint64_t hash(Kmer* key);
 
 size_tt find(Kmer* key, KmerHashTable* kmertable);
 
-int match(const char *s, int start, int len, KmerHashTable* kmap, int64_t* v_int, int64_t* v_pos, int v_len, __mram_ptr int64_t* result_id, __mram_ptr int64_t* result_pos);
+int match(int rid, const char *s, int start, int len, KmerHashTable* kmap, int64_t* v_int, int64_t* v_pos, unsigned int tid, __mram_ptr int64_t* result_id, __mram_ptr int64_t* result_pos);
 
 #endif

@@ -1,7 +1,7 @@
 target = dpu
 INCLUDE := -I.
 LDFLAGS := 
-CFLAGS := -O2
+CFLAGS := -O3
 CC := dpu-upmem-dpurte-clang -DNR_TASKLETS=$(TASKLETS)
 
 $(target): hash.o dpu.o main.c
