@@ -25,14 +25,21 @@ make -j16
       -l [double]
       -s [double]
 ```
+E.g.,
+``` shell
 time ./kallisto pseudo -i ~/data/experiment/11-mer.idx -o out --single ~/data/experiment/RNA_read/100K.fastq -l 150 -s 30 -t 8 -d 64
+```
 
 ## more information
-### DPU code is in src/dpu_app
-### host code is mainly in src/ProcessReads.cpp
+DPU code is in src/dpu_app
+host code is mainly in src/ProcessReads.cpp
 
 ## Reference
-### https://github.com/pachterlab/kallisto
+### kallisto
+https://github.com/pachterlab/kallisto
+### UPMEM
+https://github.com/CMU-SAFARI/prim-benchmarks
+https://sdk.upmem.com/2021.3.0/
 
 
 
