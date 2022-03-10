@@ -159,9 +159,7 @@ int main(){
   if(tasklet_id == 0){
     read_n = read_n < MAX_READ_N ? read_n : MAX_READ_N;
     matched_size = 0;
-    __dma_aligned int64_t head_tmp = 0;
-    mram_read(&result_head, &head_tmp, 8);
-    head = (int32_t)head_tmp;
+    head = 0;
   }
   barrier_wait(&my_barrier);
   
@@ -230,17 +228,17 @@ int main(){
 
   //matched_size_tasklet[tasklet_id] = v_matched;
 
-  barrier_wait(&my_barrier);
-  if(tasklet_id == NR_TASKLETS-1){
-    if(last_round){
-      __dma_aligned int64_t head_tmp = 0;
-      mram_write(&head_tmp, &result_head, 8);
-    }
-    else{
-      __dma_aligned int64_t head_tmp = (int64_t)matched_size;
-      mram_write(&head_tmp, &result_head, 8);
-    }
-  }
+  // barrier_wait(&my_barrier);
+  // if(tasklet_id == NR_TASKLETS-1){
+  //   if(last_round){
+  //     __dma_aligned int64_t head_tmp = 0;
+  //     mram_write(&head_tmp, &result_head, 8);
+  //   }
+  //   else{
+  //     __dma_aligned int64_t head_tmp = (int64_t)matched_size;
+  //     mram_write(&head_tmp, &result_head, 8);
+  //   }
+  // }
 
   // assmble all tasklets
   // if(tasklet_id == NR_TASKLETS-1){

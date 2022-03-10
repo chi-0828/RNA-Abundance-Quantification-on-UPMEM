@@ -81,44 +81,28 @@ size_t size_align(size_t size){
 void ReadProcessor::process_result(int dpu_id, int n, std::vector<std::vector<int64_t>> &result_2_read,
                     std::vector<std::vector<int64_t>> &matched_id, std::vector<std::vector<int64_t>> &matched_pos, std::vector<std::vector<int>> &matched_size)
 {
-
-  //int size = std::move(matched_size.at(dpu_id).at(0));
-  int start = 0;
   //std::cerr << dpu_id << " " << n <<"\n";
   std::vector<std::vector<std::pair<int, int>>> tmpp(n, std::vector<std::pair<int, int>>(0));
-  //for(int read_id = 0; read_id < n; read_id++){
-    //contig_ids.push_back(std::vector<std::pair<int, int>>());
-    //std::vector<std::pair<int, int>> tmp;
-    //std::unordered_map<int, int> umap;
-    //int end = matched_contig_len.at(dpu_id).at(read_id);
-    //std::cerr << "read " << read_id << " start at " << start << " to " << start+end-1 << "\n ID: ";
-    //for(int matched_itr = 0; matched_itr < end; matched_itr++){
-    for(int matched_itr = 0; matched_itr < matched_size.at(dpu_id)[0]; matched_itr++){
+  int DPU_round = large_k ? round : 1;
+  for(int i = 0; i < DPU_round; i++){
+    for(int matched_itr = 0; matched_itr < matched_size.at(dpu_id+i)[0]; matched_itr++){
       //std::cerr << "matched_itr" << matched_itr << " ";
-      int rid = std::move(result_2_read.at(dpu_id).at(matched_itr));
+      int rid = std::move(result_2_read.at(dpu_id+i).at(matched_itr));
       assert(0 <= rid && rid < n);
       //std::cerr << "r" << rid << " ";
-      int id = std::move(matched_id.at(dpu_id).at(matched_itr));
-     // std::cerr << "id" << id << " ";
+      int id = std::move(matched_id.at(dpu_id+i).at(matched_itr));
+      //std::cerr << "id" << id << " ";
       assert(id != -1);
-      int pos = std::move(matched_pos.at(dpu_id).at(matched_itr));
+      int pos = std::move(matched_pos.at(dpu_id+i).at(matched_itr));
       //std::cerr << "pos" << pos << " ";
       
       tmpp.at(rid).push_back({std::move(id),std::move(pos)});
       //std::cerr << "push_back\n";
-      //tmp.push_back({std::move(id),std::move(pos)});
-      //std::cerr << id << " ";
+      //getchar();
     }
     //std::cerr << "\n";
-   /* std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-
-    q_lock.lock();
-    q.push(tmp);
-    q_lock.unlock();
-    std::chrono::steady_clock::time_point time_end = std::chrono::steady_clock::now();
-    intersection_time += std::chrono::duration_cast<std::chrono::nanoseconds> (time_end - begin).count()  * 1e-9;*/
-    //start += end;
-  //}
+  }
+  
   for(auto &vec : tmpp){
     q_lock.lock();
     q.push(vec);
@@ -130,9 +114,15 @@ void ReadProcessor::process_result(int dpu_id, int n, std::vector<std::vector<in
 void ReadProcessor::transfer_read(std::vector<std::vector<std::pair<int, int>>> &contig_ids, DpuSet &dpu_set){
   // init
   //std::cerr << "[DPU] transfer " << seqs.size() << " RNA reads(" << seqs[0].second << "bp)\n";
-  int dpu_n = dpu_set.dpus().size();
+  //int dpu_n = dpu_set.dpus().size();
   int packet_size = (seqs.size() / dpu_n) > MAX_READ_N ? MAX_READ_N : (seqs.size() / dpu_n);
-
+  int roundd_n;
+  if(large_k){
+    int n = dpu_n / round;
+    packet_size = (seqs.size() / n) > MAX_READ_N ? MAX_READ_N : (seqs.size() / n);
+    roundd_n = dpu_n ;//& (-round);
+  }
+  //std::cerr << "packet_size " << packet_size << "\nroundd_n " << roundd_n << "\n";
   int remain_transfer = 0;
   // we need more than one tarnsfer
   for (int i = 0 ; ;){
@@ -142,15 +132,35 @@ void ReadProcessor::transfer_read(std::vector<std::vector<std::pair<int, int>>> 
       //std::cerr << "normal transfer\n";
       std::vector<std::vector<char>> dpu_buffer;
       std::vector<std::vector<int32_t>> dpu_buffer_len;
+      int DPU_round = 0;
       for(int d = 0; d < dpu_n; d ++){
+        if(large_k){
+          if(d+round-1 < dpu_n)
+            for(int r = 1; r < round; r++){
+              dpu_buffer.push_back(std::vector<char>());
+              dpu_buffer_len.push_back(std::vector<int32_t>());
+            }
+        }
         dpu_buffer.push_back(std::vector<char>());
         dpu_buffer_len.push_back(std::vector<int32_t>());
+        
         for(int kk = 0; kk<packet_size; kk++){
           std::vector<char> tmp(seqs[i].first, seqs[i].first + seqs[i].second);
           dpu_buffer.at(d).insert(dpu_buffer.at(d).end(), tmp.begin(), tmp.end());
           dpu_buffer_len.at(d).push_back((int32_t)(seqs[i].second));
-          i ++ ;
+
+          if(large_k){
+            if(d+round-1 < dpu_n)
+              for(int r = 1; r < round; r++){
+                dpu_buffer.at(d+r).insert(dpu_buffer.at(d+r).end(), tmp.begin(), tmp.end());
+                dpu_buffer_len.at(d+r).push_back((int32_t)(seqs[i].second));
+              }
+          }
+          if(!large_k || d+round-1 < dpu_n)
+            i++;
         }
+        if(large_k && (d+round-1 < dpu_n))
+          d += (round-1);
       }
       try {
         std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
@@ -166,43 +176,11 @@ void ReadProcessor::transfer_read(std::vector<std::vector<std::pair<int, int>>> 
 
         // run dpu
         begin = std::chrono::steady_clock::now();
-        //std::cerr << "1 run\n";
         dpu_set.exec();
         //dpu_set.log(std::cerr);
         //getchar();
         end = std::chrono::steady_clock::now(); 
         DPU_run_time += std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count()  * 1e-9;
-
-        // for large k, we have to run again after tarnsfers
-        if(large_k){
-          for(int rr = 0; rr < round - 1; rr ++){
-            //std::cerr << rr + 2 << " run\n";
-            begin = std::chrono::steady_clock::now();
-            /*std::vector<size_t> size_(1, index.kmap.size_);
-            dpu_set.copy("size_", size_);*/
-            dpu_set.copy("table_kmer", table_kmer_vec[current_round]);
-            dpu_set.copy("table_int", table_int_vec[current_round]);
-            std::vector<int32_t> round_buf(1, current_round);
-            dpu_set.copy("round_hash", round_buf);
-            if(rr == round - 2){
-              std::vector<int32_t> last_round_buf(1, 1);
-              dpu_set.copy("last_round", last_round_buf);
-            }
-            else{
-              std::vector<int32_t> last_round_buf(1, 0);
-              dpu_set.copy("last_round", last_round_buf);
-            }
-            next_round();
-            end = std::chrono::steady_clock::now();
-            transfer_table_time += std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count()  * 1e-9;
-            begin = std::chrono::steady_clock::now();
-            dpu_set.exec();
-            //dpu_set.log(std::cerr);
-            //getchar();
-            end = std::chrono::steady_clock::now();
-            DPU_run_time += std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count()  * 1e-9;
-          }
-        }
 
         //dpu_set.log(std::cerr);
         // cpoy result back
@@ -211,9 +189,11 @@ void ReadProcessor::transfer_read(std::vector<std::vector<std::pair<int, int>>> 
         dpu_set.copy(matched_size, "matched_size");
         int max = 0;
         for(auto& itr: matched_size){
+          //std::cerr << itr.at(0) << " ";
           if(itr.at(0) > max)
             max = itr.at(0);
         }
+        //std::cerr << "\n";
         assert(max != 0);
         //std::vector<std::vector<int>> matched_contig_len(dpu_n, std::vector<int>(packet_size));
         //dpu_set.copy(buffer_align(matched_contig_len), "result_len");
@@ -230,6 +210,11 @@ void ReadProcessor::transfer_read(std::vector<std::vector<std::pair<int, int>>> 
         // process the result
         for(int dpu_id = 0; dpu_id < dpu_n; dpu_id++){
           process_result(dpu_id, packet_size, result_2_read, matched_id, matched_pos, matched_size);
+          if(large_k){
+            dpu_id += (round-1);
+            if(dpu_id+round >= dpu_n)
+              break;
+          }
         }
         end = std::chrono::steady_clock::now();
         process_time += std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count()  * 1e-9;
@@ -239,7 +224,10 @@ void ReadProcessor::transfer_read(std::vector<std::vector<std::pair<int, int>>> 
         std::cerr << e.what() << std::endl;
       }
     }
-    if( i + (packet_size*dpu_n) >= seqs.size() || remain_transfer ){
+    int count = i + (packet_size*dpu_n);
+    if(large_k)
+      count = i + (packet_size*(roundd_n/round));
+    if( count >= seqs.size() || remain_transfer ){
       std::vector<std::vector<int32_t>> read_n(dpu_n, std::vector<int32_t>(1));
       std::vector<std::vector<char>> dpu_buffer;
       std::vector<std::vector<int32_t>> dpu_buffer_len;
@@ -249,23 +237,52 @@ void ReadProcessor::transfer_read(std::vector<std::vector<std::pair<int, int>>> 
         break;
       int reads_per_dpu = (remain/dpu_n);
       int reads_more_to_dpu = (remain%dpu_n);
+      if(large_k){
+        reads_per_dpu = (remain/(roundd_n/round));
+        reads_more_to_dpu = (remain%(roundd_n/round));
+      }
+      int DPU_round = 0;
       for(int d = 0; d < dpu_n; d ++){
         int N = d < reads_more_to_dpu ? reads_per_dpu+1 : reads_per_dpu;
         read_n[d][0] = N;
         dpu_buffer.push_back(std::vector<char>());;
         dpu_buffer_len.push_back(std::vector<int32_t>());
+        if(large_k){
+          if(d+round-1 < dpu_n)
+            for(int r = 1; r < round; r++){
+              read_n[d+r][0] = N;
+              dpu_buffer.push_back(std::vector<char>());
+              dpu_buffer_len.push_back(std::vector<int32_t>());
+            }
+        }
         for(int kk = 0; kk<N; kk++){
           std::vector<char> tmp(seqs[i].first, seqs[i].first + seqs[i].second);
-          
           dpu_buffer.at(d).insert(dpu_buffer.at(d).end(), tmp.begin(), tmp.end());
           dpu_buffer_len.at(d).push_back((int32_t)(seqs[i].second));
-          i ++;
+          if(large_k){
+            if(d+round-1 < dpu_n)
+              for(int r = 1; r < round; r++){
+                dpu_buffer.at(d+r).insert(dpu_buffer.at(d+r).end(), tmp.begin(), tmp.end());
+                dpu_buffer_len.at(d+r).push_back((int32_t)(seqs[i].second));
+              }
+          }
+          if(!large_k || d+round-1 < dpu_n)
+            i++;
         }
         if(d >= reads_more_to_dpu){
           std::vector<char> tmp(seqs[0].first, seqs[0].first + seqs[0].second);
           dpu_buffer.at(d).insert(dpu_buffer.at(d).end(), tmp.begin(), tmp.end());
           dpu_buffer_len.at(d).push_back(-1);
+          if(large_k){
+            if(d+round-1 < dpu_n)
+              for(int r = 1; r < round; r++){
+                dpu_buffer.at(d+r).insert(dpu_buffer.at(d+r).end(), tmp.begin(), tmp.end());
+                dpu_buffer_len.at(d+r).push_back(-1);
+              }
+          }
         }
+        if(large_k && (d+round-1 < dpu_n))
+          d += (round-1);
       }
       try {
         std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
@@ -279,34 +296,6 @@ void ReadProcessor::transfer_read(std::vector<std::vector<std::pair<int, int>>> 
         end = std::chrono::steady_clock::now();
         DPU_run_time += std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count()  * 1e-9;
 
-        // for large k, we have to run again after tarnsfers
-        if(large_k){
-          for(int rr = 0; rr < round - 1; rr ++){
-            begin = std::chrono::steady_clock::now();
-            // std::vector<size_t> size_(1, index.kmap.size_);
-            // dpu_set.copy("size_", size_);
-            dpu_set.copy("table_kmer", table_kmer_vec[current_round]);
-            dpu_set.copy("table_int", table_int_vec[current_round]);
-            std::vector<int32_t> round_buf(1, current_round);
-            dpu_set.copy("round_hash", round_buf);
-            if(rr == round - 2){
-              std::vector<int32_t> last_round_buf(1, 1);
-              dpu_set.copy("last_round", last_round_buf);
-            }
-            else{
-              std::vector<int32_t> last_round_buf(1, 0);
-              dpu_set.copy("last_round", last_round_buf);
-            }
-            next_round();
-            end = std::chrono::steady_clock::now();
-            transfer_table_time += std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count()  * 1e-9;
-            begin = std::chrono::steady_clock::now();
-            dpu_set.exec();
-            end = std::chrono::steady_clock::now();
-            DPU_run_time += std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count()  * 1e-9;
-          }
-        }
-        
         // cpoy result back
         //dpu_set.log(std::cerr);
         begin = std::chrono::steady_clock::now();
@@ -335,6 +324,11 @@ void ReadProcessor::transfer_read(std::vector<std::vector<std::pair<int, int>>> 
         // process the result
         for(int dpu_id = 0; dpu_id < dpu_n; dpu_id++){
           process_result(dpu_id, read_n[dpu_id][0], result_2_read, matched_id, matched_pos, matched_size);
+          if(large_k){
+            dpu_id += (round-1);
+            if(dpu_id+round >= dpu_n)
+              break;
+          }
         }
         end = std::chrono::steady_clock::now();
         process_time += std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count()  * 1e-9;
@@ -660,7 +654,7 @@ void MasterProcessor::processReads() {
 
     // write result 
     std::ofstream file;
-    file.open("result.txt");
+    file.open("result.tsv");
     std::cerr << "[Alignment] Total " << nummapped << " matched reads\n";
     for(int i  = 0 ; i < tc.counts.size(); i++)
       file << i << "\t" << tc.counts[i] << "\n";
@@ -1323,6 +1317,7 @@ void MasterProcessor::outputFusion(const std::stringstream &o) {
 
 ReadProcessor::ReadProcessor(const KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int _id, int _local_id) :
  paired(!opt.single_end), tc(tc), index(index), mp(mp), id(_id), local_id(_local_id) {
+   dpu_n = opt.dpu;
    intersection_time = 0;
    transfer_read_time = 0;
    transfer_result_time = 0;
@@ -1364,6 +1359,7 @@ ReadProcessor::ReadProcessor(ReadProcessor && o) :
   local_id(o.local_id),
   bufsize(o.bufsize),
   numreads(o.numreads),
+  dpu_n(o.dpu_n),
   seqs(std::move(o.seqs)),
   names(std::move(o.names)),
   quals(std::move(o.quals)),
@@ -1397,8 +1393,8 @@ ReadProcessor::~ReadProcessor() {
 void ReadProcessor::operator()() {
   std::chrono::steady_clock::time_point all_begin = std::chrono::steady_clock::now();
 
-  //DpuSet dpu_set = DpuSet::allocate(1);
-  DpuSet dpu_set = DpuSet::allocateRanks(1);
+  DpuSet dpu_set = DpuSet::allocate(dpu_n);
+  //DpuSet dpu_set = DpuSet::allocateRanks(2);
   dpu_set.load(DPU_BINARY);
   std::cerr << "\n[DPU] For read mapping: allocated " << dpu_set.dpus().size() << " dpu(s) in " << dpu_set.ranks().size() << " rank(s)\n";
 
@@ -1413,6 +1409,10 @@ void ReadProcessor::operator()() {
   std::vector<uint64_t> table_kmer;
   // if large k, we need to transfer hash more than once
   if(index.kmap.size_ > MAX_table_n){ 
+    large_k = true;
+    round = (index.kmap.size_/MAX_table_n);
+    /*std::vector<std::vector<uint64_t>> table_kmer_buf(dpu_set.dpus().size());
+    std::vector<std::vector<int64_t>> table_int_buf(dpu_set.dpus().size());
     large_k = true;
     round = (index.kmap.size_/MAX_table_n);
     //std::cerr << "round " << round << "\n";
@@ -1441,29 +1441,47 @@ void ReadProcessor::operator()() {
 
       table_int.clear();
       table_kmer.clear();
-      for(int i = 0; i<remain; i++){
+      for(int i = 0; i<MAX_table_n; i++){
         auto table_tmp = index.kmap.table;
-        table_tmp = table_tmp + head + i;
-        table_int.push_back(table_tmp->second.contig);
-        table_kmer.push_back(table_tmp->first.get_kmer()[0]);
+        if(i< remain){
+          table_tmp = table_tmp + head + i;
+          table_int.push_back(table_tmp->second.contig);
+          table_kmer.push_back(table_tmp->first.get_kmer()[0]);
+        }
+        else{
+          auto table_tmp = index.kmap.empty;
+          table_int.push_back(table_tmp.second.contig);
+          table_kmer.push_back(table_tmp.first.get_kmer()[0]);
+        }
       }
       table_int_vec.push_back(table_int);
       table_kmer_vec.push_back(table_kmer);
       head += remain;
     }
+
+    // check the table 
     assert(head == index.kmap.size_);
-    current_round = 0;
+    // prepare table transfer
+    int dpu_round = 0;
+    std::vector<std::vector<int32_t>> round_buf(dpu_set.dpus().size());
+    for(int d = 0; d < dpu_set.dpus().size(); d++){
+      round_buf[d].push_back(dpu_round);
+      table_int_buf[d].insert(table_int_buf[d].end(), table_int_vec[dpu_round].begin(), table_int_vec[dpu_round].end());
+      table_kmer_buf[d].insert(table_kmer_buf[d].end(), table_kmer_vec[dpu_round].begin(), table_kmer_vec[dpu_round].end());
+      dpu_round++ ;
+      if(dpu_round == round){
+        dpu_round = 0;
+      }
+    }*/
+
     std::vector<size_t> size_(1, index.kmap.size_);
     dpu_set.copy("size_", size_);
-    dpu_set.copy("table_kmer", table_kmer_vec[current_round]);
-    dpu_set.copy("table_int", table_int_vec[current_round]);
-    std::vector<int32_t> round_buf(1, current_round);
-    dpu_set.copy("round_hash", round_buf);
-    std::vector<int32_t> last_round_buf(1, 0);
-    dpu_set.copy("last_round", last_round_buf);
-    next_round();
+    dpu_set.copy("table_kmer", index.table_kmer_buf);
+    dpu_set.copy("table_int", index.table_int_buf);
+    dpu_set.copy("round_hash", index.round_buf);
+
   }
-  // small-k, we hust need one transfer
+  // small-k, we only need one table
   else{
     std::vector<size_t> size_(1, index.kmap.size_);
     //dpu_set.copy("pop", pop);
@@ -1477,12 +1495,13 @@ void ReadProcessor::operator()() {
     //std::cerr << "[DPU] transfer hash table (" << index.kmap.size_ << " entries)\n";
     dpu_set.copy("table_kmer", table_kmer);
     dpu_set.copy("table_int", table_int);
-    std::vector<int32_t> round_buf(1, 0);
-    dpu_set.copy("round_hash", round_buf);
     std::vector<int32_t> last_round_buf(1, 0);
     dpu_set.copy("last_round", last_round_buf);
+    std::vector<int32_t> round_buf(1, 0);
+    dpu_set.copy("round_hash", round_buf);
   }
   
+   //std::cerr << "\n[DPU] Transfer table done\n";
 
   // concurrency working between CPU and DPU
   break_loop = 0;

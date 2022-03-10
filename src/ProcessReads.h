@@ -178,7 +178,7 @@ class MasterProcessor {
 public:
   MasterProcessor (KmerIndex &index, const ProgramOptions& opt, MinCollector &tc, const Transcriptome& model)
     : tc(tc), index(index), model(model), bamfp(nullptr), bamfps(nullptr), bamh(nullptr), opt(opt), numreads(0)
-    ,nummapped(0), num_umi(0), bufsize(1ULL<<23), tlencount(0), biasCount(0), maxBiasCount((opt.bias) ? 1000000 : 0), last_pseudobatch_id (-1) { 
+    ,nummapped(0), num_umi(0), bufsize(1ULL<<23), tlencount(0), biasCount(0), maxBiasCount((opt.bias) ? 1000000 : 0), last_pseudobatch_id (-1), dpu_n(opt.dpu), rank_n(opt.dpu_rk){ 
       if (opt.bam) {
         SR = new BamSequenceReader(opt);
       } else {
@@ -236,6 +236,9 @@ public:
     }    
     delete SR;
   }
+
+  int dpu_n;
+  int rank_n;
 
   std::mutex reader_lock;
   std::vector<std::mutex> parallel_bus_reader_locks;
@@ -338,6 +341,8 @@ public:
 
   std::pair<int,int> read_count;
 
+  int dpu_n;
+
   // for concurrency
   int break_loop;
   std::mutex Eclass_lock;
@@ -350,10 +355,7 @@ public:
   bool large_k;
   int round;
   int current_round;
-  std::vector<std::vector<size_t>> size_vec;
-  std::vector<std::vector<int64_t>> table_int_vec;
-  std::vector<std::vector<uint64_t>> table_kmer_vec;
-
+  
   void operator()();
   #ifdef DPU_HEAD
   #define DPU_HEAD 1

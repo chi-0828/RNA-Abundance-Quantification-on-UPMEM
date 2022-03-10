@@ -66,8 +66,10 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
   int umi_flag = 0;
   int quant_flag = 0;
   int bus_flag = 0;
+  int dpu_flag = 64;
+  int dpurk_flag = 1;
 
-  const char *opt_string = "t:i:l:s:o:b:u:g:n";
+  const char *opt_string = "t:i:l:s:o:b:d:r:u:g:n";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
@@ -81,6 +83,8 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
     {"num", no_argument, 0, 'n'},
     {"umi", no_argument, &umi_flag, 'u'},
     {"batch", required_argument, 0, 'b'},
+    {"dpu", required_argument, &dpu_flag, 'd'},
+    {"rank", required_argument, &dpurk_flag, 'r'},
     // short args
     {"threads", required_argument, 0, 't'},
     {"gtf", required_argument, 0, 'g'},
@@ -108,6 +112,14 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'i': {
       opt.index = optarg;
+      break;
+    }
+    case 'd': {
+      opt.dpu = atoi(optarg);
+      break;
+    }
+    case 'r': {
+      opt.dpu_rk = atoi(optarg);
       break;
     }
     case 'l': {
@@ -611,7 +623,9 @@ void usagePseudo(bool valid_input = true) {
        << "    --fr-stranded             Strand specific reads, first read forward" << endl
        << "    --rf-stranded             Strand specific reads, first read reverse" << endl
        << "-n, --num                     Output number of read in BUS file flag column (only with --bus)" << endl
-       << "-t, --threads=INT             Number of threads to use (default: 1)" << endl;
+       << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
+       << "-d, --dpu=INT                 Number of dpus to use (default: 64)" << endl
+       << "-r, --rank=INT                Number of dpu ranks to use (default: 1)" << endl;
 //       << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl;
 
 }

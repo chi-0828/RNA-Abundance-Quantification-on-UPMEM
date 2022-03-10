@@ -981,6 +981,77 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   if (!opt.ecFile.empty()) {
     loadECsFromFile(opt);
   }
+
+
+  // process for dpu
+  if(kmap.size_ > MAX_table_n){
+    std::vector<int64_t> table_int;
+    std::vector<uint64_t> table_kmer;
+    //table_kmer_buf.reserve(opt.dpu);
+    //table_int_buf.reserve(opt.dpu);
+    //round_buf.reserve(opt.dpu);
+    int round = (kmap.size_/MAX_table_n);
+    //std::cerr << "round " << round << "\n";
+    int head = 0;
+    for(int r = 0; r < round; r++){
+      size_vec.push_back(std::vector<size_t>(1, MAX_table_n));
+
+      table_int.clear();
+      table_kmer.clear();
+      for(int i = 0; i<MAX_table_n; i++){
+        auto table_tmp = kmap.table;
+        table_tmp = table_tmp + head + i;
+        table_int.push_back(table_tmp->second.contig);
+        table_kmer.push_back(table_tmp->first.get_kmer()[0]);
+      }
+      table_int_vec.push_back(table_int);
+      table_kmer_vec.push_back(table_kmer);
+      head += MAX_table_n;
+    }
+    int remain = (kmap.size_%MAX_table_n);
+    //std::cerr << "remain " << remain << "\n";
+    //getchar();
+    if( remain > 0){
+      round ++;
+      size_vec.push_back(std::vector<size_t>(1, remain));
+
+      table_int.clear();
+      table_kmer.clear();
+      for(int i = 0; i<MAX_table_n; i++){
+        auto table_tmp = kmap.table;
+        if(i< remain){
+          table_tmp = table_tmp + head + i;
+          table_int.push_back(table_tmp->second.contig);
+          table_kmer.push_back(table_tmp->first.get_kmer()[0]);
+        }
+        else{
+          auto table_tmp = kmap.empty;
+          table_int.push_back(table_tmp.second.contig);
+          table_kmer.push_back(table_tmp.first.get_kmer()[0]);
+        }
+      }
+      table_int_vec.push_back(table_int);
+      table_kmer_vec.push_back(table_kmer);
+      head += remain;
+    }
+
+    // check the table 
+    assert(head == kmap.size_);
+    // prepare table transfer
+    int dpu_round = 0;
+    for(int d = 0; d < opt.dpu; d++){
+      table_kmer_buf.push_back(std::vector<size_t>());
+      table_int_buf.push_back(std::vector<int64_t>());
+      round_buf.push_back(std::vector<int32_t>());
+      round_buf[d].push_back(dpu_round);
+      table_int_buf[d].insert(table_int_buf[d].end(), table_int_vec[dpu_round].begin(), table_int_vec[dpu_round].end());
+      table_kmer_buf[d].insert(table_kmer_buf[d].end(), table_kmer_vec[dpu_round].begin(), table_kmer_vec[dpu_round].end());
+      dpu_round++ ;
+      if(dpu_round == round){
+        dpu_round = 0;
+      }
+    }
+  }
 }
 
 void KmerIndex::loadECsFromFile(const ProgramOptions& opt) {

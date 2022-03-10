@@ -1,6 +1,11 @@
 #ifndef KALLISTO_KMERINDEX_H
 #define KALLISTO_KMERINDEX_H
 
+#ifdef DPU_HEAD
+#define DPU_HEAD 1
+#else
+#include "dpu_app/dpu_def.h"
+#endif
 
 #include <iostream>
 #include <fstream>
@@ -93,6 +98,26 @@ struct DBGraph {
 struct KmerIndex {
   KmerIndex(const ProgramOptions& opt) : k(opt.k), num_trans(0), skip(opt.skip), target_seqs_loaded(false) {
     //LoadTranscripts(opt.transfasta);
+    /*std::ifstream  file;
+    file.open("13mer-table");
+    for(auto &table : table_kmer_buf){
+      for(auto &element : table){
+        file << element << " ";
+      }
+    }
+    file << "\n";
+    for(auto &table : table_int_buf){
+      for(auto &element : table){
+        file << element << " ";
+      }
+    }
+    file << "\n";
+    for(auto &table : round_buf){
+      for(auto &element : table){
+        file << element << " ";
+      }
+    }
+    file.close();*/
   }
 
   ~KmerIndex() {}
@@ -143,7 +168,12 @@ struct KmerIndex {
   std::vector<std::string> target_seqs_; // populated on demand
   bool target_seqs_loaded;
 
-
+  std::vector<std::vector<size_t>> size_vec;
+  std::vector<std::vector<int64_t>> table_int_vec;
+  std::vector<std::vector<uint64_t>> table_kmer_vec;
+  std::vector<std::vector<uint64_t>> table_kmer_buf;
+  std::vector<std::vector<int64_t>> table_int_buf;
+  std::vector<std::vector<int32_t>> round_buf;
 };
 
 

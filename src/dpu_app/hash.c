@@ -211,7 +211,7 @@ size_tt find(Kmer* key, KmerHashTable* kmertable) {
     for (;; h =  (h+1!=kmertable->size_ ? h+1 : 0)) {
 
         if(h - (round_hash*MAX_table_n) < 0 || h - (round_hash*MAX_table_n) >= MAX_table_n){
-          //return kmertable->size_;
+          return kmertable->size_;
           h = (round_hash*MAX_table_n);
           continue;
         }

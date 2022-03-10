@@ -9,9 +9,9 @@
 
 typedef struct dpu_args {
     // k-mer size
-    int32_t k;
+    int k;
     // mapping or intersection
-    int32_t run;
+    int run;
 }dpu_args;
 
 #endif

@@ -64,6 +64,8 @@ struct BUSOptions {
 struct ProgramOptions {
   bool verbose;
   int threads;
+  int dpu;
+  int dpu_rk;
   std::string index;
   int k;
   int iterations;
