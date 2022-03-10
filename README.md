@@ -1,6 +1,6 @@
 # RNA-Abundance-Quantification-on-UPMEM
 
-## build
+## Build
 ``` shell
 // build htslib first
 cd ext/htslib
@@ -14,11 +14,25 @@ cd src
 make -j16
 ```
 
+## Usage
+``` shell
+./kallisto pseudo [fastq file] 
+      -i [index file] 
+      -o [output path] 
+      -t [num of CPU threads] 
+      -d [num DPUs]
+      --single
+      -l [double]
+      -s [double]
+```
+time ./kallisto pseudo -i ~/data/experiment/11-mer.idx -o out --single ~/data/experiment/RNA_read/100K.fastq -l 150 -s 30 -t 8 -d 64
+
+## more information
 ### DPU code is in src/dpu_app
 ### host code is mainly in src/ProcessReads.cpp
 
-### Reference
-#### https://github.com/pachterlab/kallisto
+## Reference
+### https://github.com/pachterlab/kallisto
 
 
 
