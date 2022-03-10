@@ -1,4 +1,4 @@
-target = kallisto
+target = D_kallisto
 SRC_DIR := ./
 OBJ_DIR := ../obj
 SRC_FILES := $(wildcard $(SRC_DIR)/*.cpp)
@@ -21,4 +21,4 @@ $(DPU):
 	$(MAKE) -C dpu_app/ TASKLETS=11
 
 clean: 
-	rm -f kallisto ../obj/* dpu_app/dpu dpu_app/*.o
+	rm -f target ../obj/* dpu_app/dpu dpu_app/*.o
