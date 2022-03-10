@@ -41,8 +41,10 @@ https://github.com/pachterlab/kallisto
 https://github.com/CMU-SAFARI/prim-benchmarks<br>
 https://sdk.upmem.com/2021.3.0/
 
-### Testing
-time ./kallisto pseudo -i ~/data/experiment/7-mer.idx -o out --single ~/data/experiment/RNA_read/100K.fastq -l 150 -s 30 -t 1
+### Testing CPU-based kallisto
+``` shell
+time ./kallisto pseudo -i ~/data/experiment/11-mer.idx -o out --single ~/data/experiment/RNA_read/100K.fastq -l 150 -s 30 -t 8 
+```
 
 
 
