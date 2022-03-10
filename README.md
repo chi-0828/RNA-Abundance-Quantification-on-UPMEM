@@ -31,8 +31,8 @@ time ./D_kallisto pseudo -i ~/data/experiment/11-mer.idx -o out --single ~/data/
 ```
 
 ## more information
-DPU code is in src/dpu_app<br>
-host code is mainly in src/ProcessReads.cpp
+DPU program is in src/dpu_app<br>
+DPU allocation and CPU-DPU(DPU-CPU) transfers is in src/ProcessReads.cpp<br>
 
 ## Reference
 ### kallisto
