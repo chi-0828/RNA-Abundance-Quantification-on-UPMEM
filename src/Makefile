@@ -21,4 +21,4 @@ $(DPU):
 	$(MAKE) -C dpu_app/ TASKLETS=11
 
 clean: 
-	rm -f kallisto ../obj/*
+	rm -f kallisto ../obj/* dpu_app/dpu dpu_app/*.o
