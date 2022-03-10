@@ -16,7 +16,7 @@ make -j16
 
 ## Usage
 ``` shell
-./kallisto pseudo [fastq file] 
+./D_kallisto pseudo [fastq file] 
       -i [index file] 
       -o [output path] 
       -t [num of CPU threads] 
@@ -27,7 +27,7 @@ make -j16
 ```
 E.g.,
 ``` shell
-time ./kallisto pseudo -i ~/data/experiment/11-mer.idx -o out --single ~/data/experiment/RNA_read/100K.fastq -l 150 -s 30 -t 8 -d 64
+time ./D_kallisto pseudo -i ~/data/experiment/11-mer.idx -o out --single ~/data/experiment/RNA_read/100K.fastq -l 150 -s 30 -t 8 -d 64
 ```
 
 ## more information
