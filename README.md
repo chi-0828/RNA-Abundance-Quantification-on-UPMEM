@@ -38,7 +38,7 @@ host code is mainly in src/ProcessReads.cpp
 ### kallisto
 https://github.com/pachterlab/kallisto
 ### UPMEM
-https://github.com/CMU-SAFARI/prim-benchmarks
+https://github.com/CMU-SAFARI/prim-benchmarks\
 https://sdk.upmem.com/2021.3.0/
 
 
