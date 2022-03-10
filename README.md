@@ -20,5 +20,8 @@ make -j16
 ### Reference
 #### https://github.com/pachterlab/kallisto
 
+### Testing
+time ./kallisto pseudo -i ~/data/experiment/7-mer.idx -o out --single ~/data/experiment/RNA_read/100K.fastq -l 150 -s 30 -t 1
+
 
 
