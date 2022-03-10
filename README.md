@@ -25,12 +25,12 @@ make -j16
       -l [double]
       -s [double]
 ```
-E.g.,
+E.g., testing 100K reads/11-mer by 64*8 dpus 
 ``` shell
 time ./D_kallisto pseudo -i ~/data/experiment/11-mer.idx -o out --single ~/data/experiment/RNA_read/100K.fastq -l 150 -s 30 -t 8 -d 64
 ```
 
-## more information
+## More information
 DPU program is in src/dpu_app<br>
 DPU allocation and CPU-DPU(DPU-CPU) transfers is in src/ProcessReads.cpp<br>
 
@@ -39,7 +39,8 @@ DPU allocation and CPU-DPU(DPU-CPU) transfers is in src/ProcessReads.cpp<br>
 https://github.com/pachterlab/kallisto
 ### UPMEM
 https://github.com/CMU-SAFARI/prim-benchmarks<br>
-https://sdk.upmem.com/2021.3.0/
+https://sdk.upmem.com/2021.3.0/<br>
+https://sdk.upmem.com/2021.3.0/CppAPI/index.html<br>
 
 ### Testing CPU-based kallisto
 ``` shell
