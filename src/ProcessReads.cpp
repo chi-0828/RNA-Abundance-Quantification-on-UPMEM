@@ -17,11 +17,12 @@
 
 using namespace dpu;
 
+// Working threads do the intersection
 void ReadProcessor::CPU_intsersection(){
   while((q.size() != 0) || break_loop != 1){
     q_lock.lock();
     if(q.size() != 0){
-      //std::cerr << "check\n";
+
       auto contig_id_arr = q.front();
       q.pop();
       q_lock.unlock();
@@ -31,17 +32,11 @@ void ReadProcessor::CPU_intsersection(){
       
       int ec = -1;
       std::vector<int> dpu_classes = tc.DPU_intersectECs(contig_id_arr);
-      //read_count.first++;
       if (!dpu_classes.empty()) {
         ec = tc.findEC(dpu_classes);
-        //assert(ec < 0 );c
-        //assert(ec > my_counts.size());
         if(ec != -1){
-          //Eclass_lock.lock();
           ++my_counts[ec];
           read_count.second++;
-          //Eclass_lock.unlock();
-          //std::cerr << my_counts[ec] << " on class " << ec <<"\n";
         }
       }
     }
@@ -78,29 +73,21 @@ size_t size_align(size_t size){
   return size + push_size;
 }
 
+// Communication threads formating the result from DPUs and push into global queue
 void ReadProcessor::process_result(int dpu_id, int n, std::vector<std::vector<int64_t>> &result_2_read,
                     std::vector<std::vector<int64_t>> &matched_id, std::vector<std::vector<int64_t>> &matched_pos, std::vector<std::vector<int>> &matched_size)
 {
-  //std::cerr << dpu_id << " " << n <<"\n";
   std::vector<std::vector<std::pair<int, int>>> tmpp(n, std::vector<std::pair<int, int>>(0));
   int DPU_round = large_k ? round : 1;
   for(int i = 0; i < DPU_round; i++){
     for(int matched_itr = 0; matched_itr < matched_size.at(dpu_id+i)[0]; matched_itr++){
-      //std::cerr << "matched_itr" << matched_itr << " ";
       int rid = std::move(result_2_read.at(dpu_id+i).at(matched_itr));
       assert(0 <= rid && rid < n);
-      //std::cerr << "r" << rid << " ";
       int id = std::move(matched_id.at(dpu_id+i).at(matched_itr));
-      //std::cerr << "id" << id << " ";
       assert(id != -1);
       int pos = std::move(matched_pos.at(dpu_id+i).at(matched_itr));
-      //std::cerr << "pos" << pos << " ";
-      
       tmpp.at(rid).push_back({std::move(id),std::move(pos)});
-      //std::cerr << "push_back\n";
-      //getchar();
     }
-    //std::cerr << "\n";
   }
   
   for(auto &vec : tmpp){
@@ -110,11 +97,9 @@ void ReadProcessor::process_result(int dpu_id, int n, std::vector<std::vector<in
   }
 }
 
-
+// Communication threads send read packets to DPUs
 void ReadProcessor::transfer_read(std::vector<std::vector<std::pair<int, int>>> &contig_ids, DpuSet &dpu_set){
   // init
-  //std::cerr << "[DPU] transfer " << seqs.size() << " RNA reads(" << seqs[0].second << "bp)\n";
-  //int dpu_n = dpu_set.dpus().size();
   int packet_size = (seqs.size() / dpu_n) > MAX_READ_N ? MAX_READ_N : (seqs.size() / dpu_n);
   int roundd_n;
   if(large_k){
@@ -122,14 +107,13 @@ void ReadProcessor::transfer_read(std::vector<std::vector<std::pair<int, int>>> 
     packet_size = (seqs.size() / n) > MAX_READ_N ? MAX_READ_N : (seqs.size() / n);
     roundd_n = dpu_n ;//& (-round);
   }
-  //std::cerr << "packet_size " << packet_size << "\nroundd_n " << roundd_n << "\n";
+
   int remain_transfer = 0;
   // we need more than one tarnsfer
   for (int i = 0 ; ;){
     if(packet_size == 0)
       remain_transfer = 1;
     if(!remain_transfer){
-      //std::cerr << "normal transfer\n";
       std::vector<std::vector<char>> dpu_buffer;
       std::vector<std::vector<int32_t>> dpu_buffer_len;
       int DPU_round = 0;
@@ -177,26 +161,21 @@ void ReadProcessor::transfer_read(std::vector<std::vector<std::pair<int, int>>> 
         // run dpu
         begin = std::chrono::steady_clock::now();
         dpu_set.exec();
-        //dpu_set.log(std::cerr);
-        //getchar();
         end = std::chrono::steady_clock::now(); 
         DPU_run_time += std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count()  * 1e-9;
 
-        //dpu_set.log(std::cerr);
         // cpoy result back
         begin = std::chrono::steady_clock::now();
         std::vector<std::vector<int>> matched_size(dpu_n, std::vector<int>(1,-1));
         dpu_set.copy(matched_size, "matched_size");
         int max = 0;
         for(auto& itr: matched_size){
-          //std::cerr << itr.at(0) << " ";
           if(itr.at(0) > max)
             max = itr.at(0);
         }
-        //std::cerr << "\n";
+        
         assert(max != 0);
-        //std::vector<std::vector<int>> matched_contig_len(dpu_n, std::vector<int>(packet_size));
-        //dpu_set.copy(buffer_align(matched_contig_len), "result_len");
+
         std::vector<std::vector<int64_t>> result_2_read(dpu_n, std::vector<int64_t>(max, -2));
         dpu_set.copy(result_2_read, "result_2_read");
         std::vector<std::vector<int64_t>> matched_id(dpu_n, std::vector<int64_t>(max, -2));
@@ -232,7 +211,7 @@ void ReadProcessor::transfer_read(std::vector<std::vector<std::pair<int, int>>> 
       std::vector<std::vector<char>> dpu_buffer;
       std::vector<std::vector<int32_t>> dpu_buffer_len;
       int remain = seqs.size() - i;
-      //std::cerr << "remain_transfer " << remain << "\n";
+
       if(remain == 0) 
         break;
       int reads_per_dpu = (remain/dpu_n);
@@ -297,7 +276,6 @@ void ReadProcessor::transfer_read(std::vector<std::vector<std::pair<int, int>>> 
         DPU_run_time += std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count()  * 1e-9;
 
         // cpoy result back
-        //dpu_set.log(std::cerr);
         begin = std::chrono::steady_clock::now();
         std::vector<std::vector<int>> matched_size(dpu_n, std::vector<int>(1,-1));
         dpu_set.copy(matched_size, "matched_size");
@@ -307,10 +285,8 @@ void ReadProcessor::transfer_read(std::vector<std::vector<std::pair<int, int>>> 
           if(itr.at(0) > max)
             max = itr.at(0);
         }
-        //std::cerr << max << "\n";
+
         assert(max != 0);
-        //std::vector<std::vector<int>> matched_contig_len(dpu_n, std::vector<int>(reads_per_dpu+1));
-        //dpu_set.copy(buffer_align(matched_contig_len), "result_len");
         std::vector<std::vector<int64_t>> result_2_read(dpu_n, std::vector<int64_t>(max, -2));
         dpu_set.copy(result_2_read, "result_2_read");
         std::vector<std::vector<int64_t>> matched_id(dpu_n, std::vector<int64_t>(max, -2));
@@ -652,7 +628,7 @@ void MasterProcessor::processReads() {
       workers[i].join(); //wait for them to finish
     }
 
-    // write result 
+    // write result in our custom file
     std::ofstream file;
     file.open("result.tsv");
     std::cerr << "[Alignment] Total " << nummapped << " matched reads\n";
@@ -660,6 +636,8 @@ void MasterProcessor::processReads() {
       file << i << "\t" << tc.counts[i] << "\n";
     file.close();
     std::cerr << "\n";
+    // exit program
+    // TODO : exit in a normal way :)
     exit(0) ;
     // now handle the modification of the mincollector
     for (auto &t : newECcount) {
@@ -1407,73 +1385,11 @@ void ReadProcessor::operator()() {
   std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
   std::vector<int64_t> table_int;
   std::vector<uint64_t> table_kmer;
-  // if large k, we need to transfer hash more than once
+
+  // if large k, we need to transfer hash table in special policy
   if(index.kmap.size_ > MAX_table_n){ 
     large_k = true;
     round = (index.kmap.size_/MAX_table_n);
-    /*std::vector<std::vector<uint64_t>> table_kmer_buf(dpu_set.dpus().size());
-    std::vector<std::vector<int64_t>> table_int_buf(dpu_set.dpus().size());
-    large_k = true;
-    round = (index.kmap.size_/MAX_table_n);
-    //std::cerr << "round " << round << "\n";
-    int head = 0;
-    for(int r = 0; r < round; r++){
-      size_vec.push_back(std::vector<size_t>(1, MAX_table_n));
-
-      table_int.clear();
-      table_kmer.clear();
-      for(int i = 0; i<MAX_table_n; i++){
-        auto table_tmp = index.kmap.table;
-        table_tmp = table_tmp + head + i;
-        table_int.push_back(table_tmp->second.contig);
-        table_kmer.push_back(table_tmp->first.get_kmer()[0]);
-      }
-      table_int_vec.push_back(table_int);
-      table_kmer_vec.push_back(table_kmer);
-      head += MAX_table_n;
-    }
-    int remain = (index.kmap.size_%MAX_table_n);
-    //std::cerr << "remain " << remain << "\n";
-    //getchar();
-    if( remain > 0){
-      round ++;
-      size_vec.push_back(std::vector<size_t>(1, remain));
-
-      table_int.clear();
-      table_kmer.clear();
-      for(int i = 0; i<MAX_table_n; i++){
-        auto table_tmp = index.kmap.table;
-        if(i< remain){
-          table_tmp = table_tmp + head + i;
-          table_int.push_back(table_tmp->second.contig);
-          table_kmer.push_back(table_tmp->first.get_kmer()[0]);
-        }
-        else{
-          auto table_tmp = index.kmap.empty;
-          table_int.push_back(table_tmp.second.contig);
-          table_kmer.push_back(table_tmp.first.get_kmer()[0]);
-        }
-      }
-      table_int_vec.push_back(table_int);
-      table_kmer_vec.push_back(table_kmer);
-      head += remain;
-    }
-
-    // check the table 
-    assert(head == index.kmap.size_);
-    // prepare table transfer
-    int dpu_round = 0;
-    std::vector<std::vector<int32_t>> round_buf(dpu_set.dpus().size());
-    for(int d = 0; d < dpu_set.dpus().size(); d++){
-      round_buf[d].push_back(dpu_round);
-      table_int_buf[d].insert(table_int_buf[d].end(), table_int_vec[dpu_round].begin(), table_int_vec[dpu_round].end());
-      table_kmer_buf[d].insert(table_kmer_buf[d].end(), table_kmer_vec[dpu_round].begin(), table_kmer_vec[dpu_round].end());
-      dpu_round++ ;
-      if(dpu_round == round){
-        dpu_round = 0;
-      }
-    }*/
-
     std::vector<size_t> size_(1, index.kmap.size_);
     dpu_set.copy("size_", size_);
     dpu_set.copy("table_kmer", index.table_kmer_buf);
@@ -1484,7 +1400,7 @@ void ReadProcessor::operator()() {
   // small-k, we only need one table
   else{
     std::vector<size_t> size_(1, index.kmap.size_);
-    //dpu_set.copy("pop", pop);
+
     dpu_set.copy("size_", size_);
     for(int i = 0; i<index.kmap.size_; i++){
       auto table_tmp = index.kmap.table;
@@ -1492,7 +1408,7 @@ void ReadProcessor::operator()() {
       table_int.push_back(table_tmp->second.contig);
       table_kmer.push_back(table_tmp->first.get_kmer()[0]);
     }
-    //std::cerr << "[DPU] transfer hash table (" << index.kmap.size_ << " entries)\n";
+    
     dpu_set.copy("table_kmer", table_kmer);
     dpu_set.copy("table_int", table_int);
     std::vector<int32_t> last_round_buf(1, 0);
@@ -1501,9 +1417,9 @@ void ReadProcessor::operator()() {
     dpu_set.copy("round_hash", round_buf);
   }
   
-   //std::cerr << "\n[DPU] Transfer table done\n";
-
   // concurrency working between CPU and DPU
+  // allocating working thread 
+  // original thread becomes communication thread
   break_loop = 0;
   std::vector<std::thread> vecOfThreads;
   int nrthread = 1;
@@ -1536,17 +1452,10 @@ void ReadProcessor::operator()() {
     }
     pseudobatch.aln.clear();
     pseudobatch.batch_id = readbatch_id;
+    
     // process our sequences
-    /*auto read1 = seqs[6];
-    auto read2 = seqs[7];
-    seqs.clear();
-    seqs.push_back(read1);
-    //seqs.push_back(read1);
-    //seqs.push_back(read2);
-    //seqs.push_back(read2);*/
     processBuffer(dpu_set);
-    //mp.DPU_update(my_counts);
-    //clear();
+ 
   }
 
   break_loop = 1;

@@ -71,47 +71,37 @@ int match(int rid, const char *s, int start, int len, KmerHashTable* kmap, int64
       __dma_aligned int64_t table_int_cache[1];
       __mram_ptr void *target_addr = kmap->table_int_ptr+finded_key;
       mram_read(target_addr, table_int_cache, sizeof(int64_t));
-      //printf("=> contig %lld ", table_int_cache[0]);
 
       // prevent error or bug
       assert(table_int_cache[0] != -1);
 
       // push back to array
-      
       v_int[v_16len[tid]] = table_int_cache[0];
       v_pos[v_16len[tid]] = pos;
       v_16len[tid]++;
       matched_size_tasklet[tid]++;
       if(v_16len[tid] == 16){
+
         // WRAM cache is full, store to MRAM
         // lock
         mutex_lock(my_mutex);
-        // __dma_aligned int64_t *vint_tmp =  result_id_tasklet[tid];
-        // __dma_aligned int64_t *vpos_tmp =  result_pos_tasklet[tid];
         mram_write(v_int, result_id + head, 128);
         mram_write(v_pos, result_pos + head, 128);
         __dma_aligned int64_t r_2_r_tmp[16];
         for(int ii = 0; ii < 16; ii++){
           r_2_r_tmp[ii] = (int64_t)rid;
         }
-        // for(int ii = 0; ii < 16; ii++){
-        //   printf("%lld ", r_2_r_tmp[ii]);
-        // }
         mram_write(r_2_r_tmp, result_2_read + head, 128);
         head += (16);
         matched_size = head;
         // unlock
         mutex_unlock(my_mutex);
+
         // reset cache
         v_16len[tid] = 0;
       }
       
     }
-    else{
-      
-      //printf("not find ");
-    }
-    //printf("i(%d) %d\n", i, (len - k + 1));
     if(i == (len - arg.k + 1) -1)
       break;
   }
@@ -121,17 +111,12 @@ int match(int rid, const char *s, int start, int len, KmerHashTable* kmap, int64
   //mutex_unlock(my_mutex);
   if(v_16len[tid] > 0){
     mutex_lock(my_mutex);
-    // __dma_aligned int64_t *vint_tmp =  result_id_tasklet[tid];
-    // __dma_aligned int64_t *vpos_tmp =  result_pos_tasklet[tid];
     mram_write(v_int, result_id + head, v_16len[tid]*8);
     mram_write(v_pos, result_pos + head, v_16len[tid]*8);
     __dma_aligned int64_t r_2_r_tmp[16];
     for(int ii = 0; ii < 16; ii++){
       r_2_r_tmp[ii] = (int64_t)rid;
     }
-    // for(int ii = 0; ii < 16; ii++){
-    //   printf("%lld ", r_2_r_tmp[ii]);
-    // }
     mram_write(r_2_r_tmp, result_2_read + head, v_16len[tid]*8);
     head += (v_16len[tid]);
     matched_size = head;
@@ -140,10 +125,6 @@ int match(int rid, const char *s, int start, int len, KmerHashTable* kmap, int64
     // reset cache
     v_16len[tid] = 0;
   }
-
-  //mutex_unlock(my_mutex);
-
-  //printf("\n");
   return 1;
 }
 
@@ -225,61 +206,5 @@ int main(){
     matched_count_read = (matched_size_tasklet[tasklet_id] - matched_count_read);
     result_len[readid] = matched_count_read;
   }
-
-  //matched_size_tasklet[tasklet_id] = v_matched;
-
-  // barrier_wait(&my_barrier);
-  // if(tasklet_id == NR_TASKLETS-1){
-  //   if(last_round){
-  //     __dma_aligned int64_t head_tmp = 0;
-  //     mram_write(&head_tmp, &result_head, 8);
-  //   }
-  //   else{
-  //     __dma_aligned int64_t head_tmp = (int64_t)matched_size;
-  //     mram_write(&head_tmp, &result_head, 8);
-  //   }
-  // }
-
-  // assmble all tasklets
-  // if(tasklet_id == NR_TASKLETS-1){
-    
-  //   __dma_aligned int64_t head = 0;
-  //   mram_read(&result_head, &head, 8);
-
-  //   for(int tid = 0; tid < NR_TASKLETS; tid ++){
-      
-  //     __dma_aligned int64_t *vint_tmp =  result_id_tasklet[tid];
-  //     __dma_aligned int64_t *vpos_tmp =  result_pos_tasklet[tid];
-  //     int matched_tmp = matched_size_tasklet[tid];
-  //     assert(matched_tmp >= 0);
-
-  //     // 256 * sizeof(int64_t) = 2048 byte 
-  //     int byte_round = ((matched_tmp)/256);
-  //     int remain_round = ((matched_tmp)%256);
-  //     int v_head = 0;
-  //     for(int r = 0; r < byte_round; r++){
-  //       mram_write(vint_tmp + v_head, result_id + head, 2048);
-  //       mram_write(vpos_tmp + v_head, result_pos + head, 2048);
-  //       v_head += 256;
-  //       head += (256);
-  //     }
-  //     if(remain_round != 0){
-  //       mram_write(vint_tmp + v_head, result_id + head, remain_round*8);
-  //       mram_write(vpos_tmp + v_head, result_pos + head, remain_round*8);
-  //       head += (remain_round);
-  //     }
-  //   }
-  //   matched_size = head;
-
-  //   if(last_round){
-  //     __dma_aligned int64_t head_tmp = 0;
-  //     mram_write(&head_tmp, &result_head, 8);
-  //   }
-  //   else{
-  //     __dma_aligned int64_t head_tmp = matched_size;
-  //     mram_write(&head_tmp, &result_head, 8);
-  //   }
-  // }
-
   return 0;
 }
