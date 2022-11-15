@@ -1,6 +1,6 @@
 # RNA-Abundance-Quantification-on-UPMEM
 ## More destails can be found in the paper
-https://scholar.google.com.tw/citations?view_op=view_citation&hl=zh-TW&user=SoyMWUsAAAAJ&citation_for_view=SoyMWUsAAAAJ:u-x6o8ySG0sC
+https://ieeexplore.ieee.org/abstract/document/9898625
 
 ## Build
 ``` shell
