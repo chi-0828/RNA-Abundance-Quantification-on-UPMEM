@@ -34,7 +34,7 @@ time ./D_kallisto pseudo -i ~/data/experiment/11-mer.idx -o out --single ~/data/
 
 ## More information
 DPU program is in src/dpu_app<br>
-DPU allocation and CPU-DPU(DPU-CPU) transfers is in src/ProcessReads.cpp<br>
+DPU allocation and CPU-DPU(DPU-CPU) transfers are in src/ProcessReads.cpp<br>
 
 ## Reference
 ### kallisto
