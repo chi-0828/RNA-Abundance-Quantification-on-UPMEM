@@ -1,5 +1,5 @@
 # RNA-Abundance-Quantification-on-UPMEM
-## More destails can be found in the paper "RNA-seq Quantification on Processing in memory Architecture: Observation and Characterization"
+## More destails can be found in the paper: "RNA-seq Quantification on Processing in memory Architecture: Observation and Characterization"
 https://doi.org/10.1109/NVMSA56066.2022.00014
 ## Citation
 @inproceedings{chen2022rna,
