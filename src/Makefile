@@ -4,7 +4,7 @@ OBJ_DIR := ../obj
 SRC_FILES := $(wildcard $(SRC_DIR)/*.cpp)
 OBJ_FILES := $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRC_FILES))
 INCLUDE := -I../ext/htslib/ -I.
-LDFLAGS := `dpu-pkg-config --cflags --libs dpu` ../ext/htslib/libhts.a -pthread -lz -lrt -g -O3 
+LDFLAGS := `dpu-pkg-config --cflags --libs dpu` ../ext/htslib/libhts.a -pthread -lz -lm -llzma -lbz2 -lrt -g -O3 
 CXXFLAGS := -g `dpu-pkg-config --cflags --libs dpu` -O3
 
 DPU := dpu_app/dpu
