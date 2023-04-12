@@ -1,7 +1,7 @@
 # RNA-Abundance-Quantification-on-UPMEM
 ## More destails can be found in the paper: "RNA-seq Quantification on Processing in memory Architecture: Observation and Characterization"
 https://doi.org/10.1109/NVMSA56066.2022.00014
-## Citation
+## Cite the paper if you use D_kallisto in your work
 > Liang-Chi Chen, Shu-Qi Yu, Chien-Chung Ho, Yuan-Hao Chang, Da-Wei Chang, Wei-Chen Wang, Yu-Ming Chang,
 > "RNA-seq Quantification on Processing in memory Architecture: Observation and Characterization,"
 > The 11th IEEE Non-Volatile Memory Systems and Applications Symposium (NVMSA), August 23-25, 2022
