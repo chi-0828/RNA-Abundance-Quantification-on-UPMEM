@@ -1,6 +1,10 @@
 # RNA-Abundance-Quantification-on-UPMEM
-### More destails can be found in the paper: "RNA-seq Quantification on Processing in memory Architecture: Observation and Characterization"
-[paper](https://doi.org/10.1109/NVMSA56066.2022.00014)
+- More details can be found in the paper: "RNA-seq Quantification on Processing in Memory Architecture: Observation and Characterization"
+- [paper](https://doi.org/10.1109/NVMSA56066.2022.00014)
+  
+## Our new project about RNA-seq Quantification on UPMEM DPU 
+[UpPipe](https://github.com/chi-0828/UpPipe)
+
 ## Cite the paper if you use D_kallisto in your work
 > Liang-Chi Chen, Shu-Qi Yu, Chien-Chung Ho, Yuan-Hao Chang, Da-Wei Chang, Wei-Chen Wang, Yu-Ming Chang,
 > "RNA-seq Quantification on Processing in memory Architecture: Observation and Characterization,"
@@ -15,8 +19,7 @@
   organization={IEEE}
 }
 ```
-## Our new project about RNA-seq Quantification on UPMEM DPU 
-[UpPipe](https://github.com/chi-0828/UpPipe)
+
 
 ## Build
 ``` shell
